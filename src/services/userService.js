@@ -108,7 +108,7 @@ let createNewUser = (data) => {
             if (check === true) {
                 resolve({
                     errCode: 1,
-                    message:
+                    errMessage:
                         "Email is already in used. Please try another email!",
                 });
             } else {

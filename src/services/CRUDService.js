@@ -1,5 +1,5 @@
-import bcrypt from 'bcryptjs';
-import db from '../models/index';
+import bcrypt from "bcryptjs";
+import db from "../models/index";
 
 const salt = bcrypt.genSaltSync(10);
 
@@ -16,13 +16,13 @@ let createNewUser = async (data) => {
                 phoneNumber: data.phoneNumber,
                 gender: data.gender === 1 ? true : false,
                 roleId: data.roleId,
-            })
-            resolve('success');
+            });
+            resolve("success");
         } catch (error) {
-            reject(error)
+            reject(error);
         }
-    })
-}
+    });
+};
 
 let hashUserPassword = (password) => {
     return new Promise(async (resolve, reject) => {
@@ -32,8 +32,8 @@ let hashUserPassword = (password) => {
         } catch (e) {
             reject(e);
         }
-    })
-}
+    });
+};
 
 let getAllUser = () => {
     return new Promise(async (resolve, reject) => {
@@ -45,8 +45,8 @@ let getAllUser = () => {
         } catch (e) {
             reject(e);
         }
-    })
-}
+    });
+};
 
 let getUserInfoById = (userId) => {
     return new Promise(async (resolve, reject) => {
@@ -63,8 +63,8 @@ let getUserInfoById = (userId) => {
         } catch (e) {
             reject(e);
         }
-    })
-}
+    });
+};
 
 let updateUserData = (data) => {
     return new Promise(async (resolve, reject) => {
@@ -83,8 +83,8 @@ let updateUserData = (data) => {
         } catch (e) {
             reject(e);
         }
-    })
-}
+    });
+};
 
 let deleteUserById = (userId) => {
     return new Promise(async (resolve, reject) => {
@@ -97,8 +97,8 @@ let deleteUserById = (userId) => {
         } catch (e) {
             reject(e);
         }
-    })
-}
+    });
+};
 
 module.exports = {
     createNewUser: createNewUser,
@@ -106,4 +106,4 @@ module.exports = {
     getUserInfoById: getUserInfoById,
     updateUserData: updateUserData,
     deleteUserById: deleteUserById,
-}
+};
