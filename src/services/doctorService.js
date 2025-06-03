@@ -1,4 +1,8 @@
 import db from "../models/index";
+require("dotenv").config();
+import _ from "lodash";
+
+const MAX_NUMBER_SCHEDULES = process.env.MAX_NUMBER_SCHEDULES || 10;
 
 let getTopDoctorHome = (limit) => {
     return new Promise(async (resolve, reject) => {
@@ -158,9 +162,134 @@ let getDetailDoctorById = (id) => {
     });
 };
 
+let bulkCreateSchedule = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data.arrSchedule || !data.doctorId || !data.date) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing parameter",
+                });
+            } else {
+                let schedule = data.arrSchedule;
+                if (schedule && schedule.length > 0) {
+                    schedule = schedule.map((item) => {
+                        item.maxNumber = MAX_NUMBER_SCHEDULES;
+                        return item;
+                    });
+                }
+
+                // Check if the doctor exists
+                let existing = await db.Schedule.findAll({
+                    where: {
+                        doctorId: data.doctorId,
+                        date: data.date,
+                    },
+                    attributes: [
+                        "id",
+                        "timeType",
+                        "date",
+                        "doctorId",
+                        "maxNumber",
+                    ],
+                    raw: true,
+                });
+
+                // If schedule is not provided, delete all existing schedules for the doctor on that date
+                if (data.arrSchedule.length === 0) {
+                    await db.Schedule.destroy({
+                        where: {
+                            doctorId: data.doctorId,
+                            date: data.date,
+                        },
+                        force: true,
+                    });
+                    resolve({
+                        errCode: 0,
+                        errMessage: "OK",
+                    });
+                    return;
+                }
+
+                // Find schedules that need to be created
+                let toCreate = _.differenceWith(
+                    schedule,
+                    existing,
+                    (a, b) => a.timeType === b.timeType && +a.date === +b.date
+                );
+
+                // Find schedules that need to be deleted
+                let toDelete = _.differenceWith(
+                    existing,
+                    schedule,
+                    (a, b) => a.timeType === b.timeType && +a.date === +b.date
+                );
+
+                if (toDelete && toDelete.length > 0) {
+                    let idsToDelete = toDelete.map((item) => item.id);
+                    await db.Schedule.destroy({
+                        where: { id: idsToDelete },
+                        force: true,
+                    });
+                }
+
+                if (toCreate && toCreate.length > 0) {
+                    await db.Schedule.bulkCreate(toCreate);
+                }
+
+                resolve({
+                    errCode: 0,
+                    errMessage: "OK",
+                });
+            }
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
+let getScheduleDoctorByDate = (doctorId, date) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!doctorId || !date) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing parameter",
+                });
+            } else {
+                let dataSchedule = await db.Schedule.findAll({
+                    where: { doctorId: doctorId, date: date },
+                    include: [
+                        {
+                            model: db.Allcode,
+                            as: "timeTypeData",
+                            attributes: ["valueEn", "valueVi"],
+                        },
+                    ],
+                    raw: false,
+                    nest: true,
+                });
+
+                if (!dataSchedule) {
+                    dataSchedule = [];
+                }
+
+                resolve({
+                    errCode: 0,
+                    data: dataSchedule,
+                });
+            }
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
 module.exports = {
     getTopDoctorHome: getTopDoctorHome,
     getAllDoctors: getAllDoctors,
     saveDetailInfoDoctor: saveDetailInfoDoctor,
     getDetailDoctorById: getDetailDoctorById,
+    bulkCreateSchedule: bulkCreateSchedule,
+    getScheduleDoctorByDate: getScheduleDoctorByDate,
 };
