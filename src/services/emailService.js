@@ -15,7 +15,10 @@ let sendEmail = async (data) => {
     let info = await transporter.sendMail({
         from: `"${process.env.EMAIL_APP_NAME}" <${process.env.EMAIL_APP}>`,
         to: data.receiverEmail,
-        subject: "Xác nhận lịch hẹn khám bệnh",
+        subject:
+            data.language === "vi"
+                ? "Xác nhận lịch hẹn khám bệnh"
+                : "Confirm your medical appointment",
         html: buildEmailHTMLTemplate(data),
     });
 };
