@@ -58,23 +58,42 @@ let getAllDoctors = () => {
     });
 };
 
+let checkRequiredFields = (data) => {
+    let fields = [
+        "doctorId",
+        "contentHTML",
+        "contentMarkdown",
+        "action",
+        "selectedPrice",
+        "selectedPayment",
+        "selectedProvince",
+        "selectedSpecialty",
+        "nameClinic",
+        "addressClinic",
+    ];
+    let isValid = true;
+    let missingField = "";
+    for (let field of fields) {
+        if (!data[field]) {
+            isValid = false;
+            missingField = field;
+            break;
+        }
+    }
+    return {
+        isValid: isValid,
+        missingField: missingField,
+    };
+};
+
 let saveDetailInfoDoctor = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
-            if (
-                !data.doctorId ||
-                !data.contentHTML ||
-                !data.contentMarkdown ||
-                !data.action ||
-                !data.selectedPrice ||
-                !data.selectedPayment ||
-                !data.selectedProvince ||
-                !data.nameClinic ||
-                !data.addressClinic
-            ) {
+            let checkFields = checkRequiredFields(data);
+            if (checkFields.isValid === false) {
                 resolve({
                     errCode: 1,
-                    errMessage: "Missing parameter",
+                    errMessage: `Missing parameter: ${checkFields.missingField}`,
                 });
             } else {
                 // Upsert Markdown table
@@ -106,6 +125,8 @@ let saveDetailInfoDoctor = (data) => {
                 if (doctorInfo) {
                     // Update existing record
                     doctorInfo.doctorId = data.doctorId;
+                    doctorInfo.specialtyId = data.selectedSpecialty;
+                    doctorInfo.clinicId = data.selectedClinic;
                     doctorInfo.priceId = data.selectedPrice;
                     doctorInfo.paymentId = data.selectedPayment;
                     doctorInfo.provinceId = data.selectedProvince;
@@ -117,6 +138,8 @@ let saveDetailInfoDoctor = (data) => {
                     // Create new record
                     await db.Doctor_Info.create({
                         doctorId: data.doctorId,
+                        specialtyId: data.selectedSpecialty,
+                        clinicId: data.selectedClinic,
                         priceId: data.selectedPrice,
                         paymentId: data.selectedPayment,
                         provinceId: data.selectedProvince,
