@@ -503,6 +503,65 @@ let getScheduleDoctorByDate = (doctorId, date) => {
     });
 };
 
+let getListPatientForDoctor = (doctorId, date) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!doctorId || !date) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing parameter",
+                });
+            } else {
+                let data = await db.Booking.findAll({
+                    where: { statusId: "S2", doctorId: doctorId, date: date },
+                    attributes: {
+                        exclude: ["token", "createdAt", "updatedAt"],
+                    },
+                    include: [
+                        {
+                            model: db.User,
+                            as: "patientData",
+                            attributes: [
+                                "email",
+                                "firstName",
+                                "phoneNumber",
+                                "address",
+                                "gender",
+                            ],
+                            include: [
+                                {
+                                    model: db.Allcode,
+                                    as: "genderData",
+                                    attributes: ["valueEn", "valueVi"],
+                                },
+                            ],
+                        },
+                        {
+                            model: db.Allcode,
+                            as: "patientTimeTypeData",
+                            attributes: ["valueEn", "valueVi"],
+                        },
+                    ],
+                    raw: false,
+                    nest: true,
+                });
+
+                if (!data) {
+                    data = [];
+                }
+
+                resolve({
+                    errCode: 0,
+                    errMessage: "OK",
+                    data: data,
+                });
+            }
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
 module.exports = {
     getTopDoctorHome: getTopDoctorHome,
     getAllDoctors: getAllDoctors,
@@ -512,4 +571,5 @@ module.exports = {
     getProfileDoctorById: getProfileDoctorById,
     bulkCreateSchedule: bulkCreateSchedule,
     getScheduleDoctorByDate: getScheduleDoctorByDate,
+    getListPatientForDoctor: getListPatientForDoctor,
 };

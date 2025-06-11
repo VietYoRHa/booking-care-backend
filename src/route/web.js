@@ -50,6 +50,11 @@ let initWebRoutes = (app) => {
         "/api/get-schedule-doctor-by-date",
         doctorController.getScheduleDoctorByDate
     );
+    router.get(
+        "/api/get-list-patient-for-doctor",
+        doctorController.getListPatientForDoctor
+    );
+
     router.post(
         "/api/patient-book-appointment",
         patientController.postBookAppointment
@@ -58,6 +63,7 @@ let initWebRoutes = (app) => {
         "/api/verify-book-appointment",
         patientController.postVerifyBookAppointment
     );
+
     router.post(
         "/api/create-new-specialty",
         specialtyController.createNewSpecialty

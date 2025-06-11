@@ -16,7 +16,10 @@ let postBookAppointment = (data) => {
                 !data.doctorId ||
                 !data.date ||
                 !data.timeType ||
-                !data.fullName
+                !data.fullName ||
+                !data.selectedGender ||
+                !data.address ||
+                !data.phoneNumber
             ) {
                 resolve({
                     errCode: 1,
@@ -39,8 +42,28 @@ let postBookAppointment = (data) => {
                     defaults: {
                         email: data.email,
                         roleId: "R3",
+                        firstName: data.fullName,
+                        gender: data.selectedGender,
+                        address: data.address,
+                        phoneNumber: data.phoneNumber,
                     },
+                    raw: false,
                 });
+                if (user && user[0] && user[0].firstName !== data.fullName) {
+                    return resolve({
+                        errCode: 3,
+                        errMessage:
+                            "Email already exists with a different name",
+                    });
+                }
+                // If the user already exists, we can update their information
+                if (user && user[0]) {
+                    user[0].address = data.address;
+                    user[0].gender = data.selectedGender;
+                    user[0].phoneNumber = data.phoneNumber;
+                    await user[0].save();
+                }
+
                 // Create a new appointment
                 if (user && user[0]) {
                     await db.Booking.findOrCreate({
