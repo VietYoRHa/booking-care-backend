@@ -2,7 +2,7 @@ import express from "express";
 import homeController from "../controllers/homeController";
 import userController from "../controllers/userController";
 import doctorController from "../controllers/doctorController";
-import patientController from "../controllers/patientController";
+import appointmentController from "../controllers/appointmentController";
 import specialtyController from "../controllers/specialtyController";
 import clinicController from "../controllers/clinicController";
 
@@ -57,11 +57,11 @@ let initWebRoutes = (app) => {
 
     router.post(
         "/api/patient-book-appointment",
-        patientController.postBookAppointment
+        appointmentController.postBookAppointment
     );
     router.post(
         "/api/verify-book-appointment",
-        patientController.postVerifyBookAppointment
+        appointmentController.postVerifyBookAppointment
     );
 
     router.post(

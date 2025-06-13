@@ -1,8 +1,8 @@
-import patientService from "../services/patientService";
+import appointmentService from "../services/appointmentService";
 
 let postBookAppointment = async (req, res) => {
     try {
-        let message = await patientService.postBookAppointment(req.body);
+        let message = await appointmentService.postBookAppointment(req.body);
         return res.status(200).json(message);
     } catch (error) {
         return res.status(200).json({
@@ -14,7 +14,9 @@ let postBookAppointment = async (req, res) => {
 
 let postVerifyBookAppointment = async (req, res) => {
     try {
-        let message = await patientService.postVerifyBookAppointment(req.body);
+        let message = await appointmentService.postVerifyBookAppointment(
+            req.body
+        );
         return res.status(200).json(message);
     } catch (error) {
         return res.status(200).json({
