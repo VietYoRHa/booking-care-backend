@@ -1,5 +1,6 @@
 import db from "../models/index";
 import bcrypt from "bcryptjs";
+import { createJWT } from "../middleware/authMiddleware";
 
 const salt = bcrypt.genSaltSync(10);
 
@@ -42,8 +43,20 @@ let handleUserLogin = (email, password) => {
                     if (check) {
                         userData.errCode = 0;
                         userData.errMessage = "Login successfully";
+                        const payload = {
+                            id: user.id,
+                            email: user.email,
+                            roleId: user.roleId,
+                            firstName: user.firstName,
+                            lastName: user.lastName,
+                        };
+
+                        const token = createJWT(payload);
                         delete user.password;
-                        userData.user = user;
+                        userData.user = {
+                            ...user,
+                            accessToken: token,
+                        };
                     } else {
                         userData.errCode = 3;
                         userData.errMessage = "Wrong password";
@@ -53,7 +66,6 @@ let handleUserLogin = (email, password) => {
                     userData.errMessage = "User not found";
                 }
             } else {
-                // Return error
                 userData.errCode = 1;
                 userData.errMessage = "Email does not exist";
             }
@@ -172,7 +184,7 @@ let deleteUser = (userId) => {
 let updateUser = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
-            if (!data.id || !data.roleId || !data.positionId || !data.gender) {
+            if (!data.id || !data.roleId || !data.gender) {
                 resolve({
                     errCode: 2,
                     errMessage: "Missing required parameter!",
