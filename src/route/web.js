@@ -145,10 +145,10 @@ let initWebRoutes = (app) => {
         doctorController.getListPatientForDoctor
     );
     router.post(
-        "/api/confirm-appointment",
+        "/api/complete-appointment",
         checkUserJWT,
         checkUserPermission([ROLES.DOCTOR]),
-        appointmentController.confirmAppointment
+        appointmentController.completeAppointment
     );
     router.post(
         "/api/cancel-appointment",

@@ -179,23 +179,39 @@ let postVerifyBookAppointment = (data) => {
     });
 };
 
-let confirmAppointment = (data) => {
+let completeAppointment = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
-            if (!data.id || !data.statusId) {
+            if (!data.id || !data.date) {
                 resolve({
                     errCode: 1,
                     errMessage: "Missing required parameters",
                 });
             } else {
                 let appointment = await db.Appointment.findOne({
-                    where: { id: data.id },
+                    where: { id: data.id, date: data.date, statusId: "S2" },
                     raw: false,
                 });
 
                 if (appointment) {
-                    appointment.statusId = data.statusId;
+                    appointment.statusId = "S3";
                     await appointment.save();
+                    emailService
+                        .sendCompleteEmail({
+                            receiverEmail: data.email,
+                            patientName: data.fullName,
+                            time: data.timeString,
+                            doctorName: data.doctorName,
+                            language: data.language,
+                            file: data.file,
+                            fileName: data.fileName,
+                        })
+                        .catch((error) => {
+                            resolve({
+                                errCode: 2,
+                                errMessage: "Error sending cancellation email",
+                            });
+                        });
                     resolve({
                         errCode: 0,
                         errMessage: "Appointment status updated successfully",
@@ -223,7 +239,7 @@ let cancelAppointment = (data) => {
                 });
             } else {
                 let appointment = await db.Appointment.findOne({
-                    where: { id: data.id, statusId: "S2" },
+                    where: { id: data.id, date: data.date, statusId: "S2" },
                     raw: false,
                 });
 
@@ -265,6 +281,6 @@ let cancelAppointment = (data) => {
 module.exports = {
     postBookAppointment,
     postVerifyBookAppointment,
-    confirmAppointment,
+    completeAppointment,
     cancelAppointment,
 };
