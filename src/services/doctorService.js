@@ -66,8 +66,6 @@ let checkRequiredFields = (data) => {
         "selectedPayment",
         "selectedProvince",
         "selectedSpecialty",
-        "nameClinic",
-        "addressClinic",
     ];
     let isValid = true;
     let missingField = "";
@@ -94,16 +92,16 @@ let saveDetailInfoDoctor = (data) => {
                     errMessage: `Missing parameter: ${checkFields.missingField}`,
                 });
             } else {
-                // Upsert Markdown table
+                // Upsert Doctor_Info table
                 if (data.action === "CREATE") {
-                    await db.Markdown.create({
+                    await db.Doctor_Info.create({
                         contentHTML: data.contentHTML,
                         contentMarkdown: data.contentMarkdown,
                         doctorId: data.doctorId,
                         description: data.description,
                     });
                 } else if (data.action === "EDIT") {
-                    let doctorMarkdown = await db.Markdown.findOne({
+                    let doctorMarkdown = await db.Doctor_Info.findOne({
                         where: { doctorId: data.doctorId },
                         raw: false,
                     });
@@ -116,7 +114,7 @@ let saveDetailInfoDoctor = (data) => {
                 }
 
                 // Upsert Doctor Info table
-                let doctorInfo = await db.Doctor_Info.findOne({
+                let doctorInfo = await db.Doctor_Clinic_Specialty.findOne({
                     where: { doctorId: data.doctorId },
                     raw: false,
                 });
@@ -128,8 +126,6 @@ let saveDetailInfoDoctor = (data) => {
                     doctorInfo.priceId = data.selectedPrice;
                     doctorInfo.paymentId = data.selectedPayment;
                     doctorInfo.provinceId = data.selectedProvince;
-                    doctorInfo.nameClinic = data.nameClinic;
-                    doctorInfo.addressClinic = data.addressClinic;
                     doctorInfo.note = data.note;
                     await doctorInfo.save();
                 } else {
@@ -141,8 +137,6 @@ let saveDetailInfoDoctor = (data) => {
                         priceId: data.selectedPrice,
                         paymentId: data.selectedPayment,
                         provinceId: data.selectedProvince,
-                        nameClinic: data.nameClinic,
-                        addressClinic: data.addressClinic,
                         note: data.note,
                     });
                 }
@@ -511,6 +505,7 @@ let getListPatientForDoctor = (doctorId, date) => {
                             attributes: [
                                 "email",
                                 "firstName",
+                                "lastName",
                                 "phoneNumber",
                                 "address",
                                 "gender",

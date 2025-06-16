@@ -22,7 +22,8 @@ let postBookAppointment = (data) => {
                 !data.fullName ||
                 !data.selectedGender ||
                 !data.address ||
-                !data.phoneNumber
+                !data.phoneNumber ||
+                !data.reason
             ) {
                 resolve({
                     errCode: 1,
@@ -81,6 +82,7 @@ let postBookAppointment = (data) => {
                             patientId: user[0].id,
                             date: data.date,
                             timeType: data.timeType,
+                            reason: data.reason,
                             token: token,
                         },
                         raw: false,
@@ -90,6 +92,7 @@ let postBookAppointment = (data) => {
                         appointment[0] &&
                         appointment[0].statusId === "S1"
                     ) {
+                        appointment[0].reason = data.reason;
                         appointment[0].token = token;
                         await appointment[0].save();
                     }
