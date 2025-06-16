@@ -97,6 +97,18 @@ let initWebRoutes = (app) => {
         checkUserPermission([ROLES.ADMIN]),
         clinicController.createNewClinic
     );
+    router.put(
+        "/api/edit-clinic",
+        checkUserJWT,
+        checkUserPermission([ROLES.ADMIN]),
+        clinicController.editClinic
+    );
+    router.delete(
+        "/api/delete-clinic",
+        checkUserJWT,
+        checkUserPermission([ROLES.ADMIN]),
+        clinicController.deleteClinic
+    );
 
     // Routes cho Admin và Bác sĩ
 
