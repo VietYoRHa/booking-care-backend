@@ -10,12 +10,15 @@ let buildRedirectLink = (doctorId, token) => {
 
 let postBookAppointment = (data) => {
     return new Promise(async (resolve, reject) => {
+        let isSendEmail = true;
         try {
             if (
                 !data.email ||
                 !data.doctorId ||
                 !data.date ||
                 !data.timeType ||
+                !data.firstName ||
+                !data.lastName ||
                 !data.fullName ||
                 !data.selectedGender ||
                 !data.address ||
@@ -27,29 +30,28 @@ let postBookAppointment = (data) => {
                 });
             } else {
                 let token = uuidv4();
-                // Send email notification
-                await emailService.sendEmail({
-                    receiverEmail: data.email,
-                    patientName: data.fullName,
-                    time: data.timeString,
-                    doctorName: data.doctorName,
-                    language: data.language,
-                    redirectLink: buildRedirectLink(data.doctorId, token),
-                });
+
                 // Upsert patient
                 let user = await db.User.findOrCreate({
                     where: { email: data.email },
                     defaults: {
                         email: data.email,
                         roleId: "R3",
-                        firstName: data.fullName,
+                        firstName: data.firstName,
+                        lastName: data.lastName,
                         gender: data.selectedGender,
                         address: data.address,
                         phoneNumber: data.phoneNumber,
                     },
                     raw: false,
                 });
-                if (user && user[0] && user[0].firstName !== data.fullName) {
+
+                if (
+                    user &&
+                    user[0] &&
+                    user[0].firstName !== data.firstName &&
+                    user[0].lastName !== data.lastName
+                ) {
                     return resolve({
                         errCode: 3,
                         errMessage:
@@ -66,7 +68,7 @@ let postBookAppointment = (data) => {
 
                 // Create a new appointment
                 if (user && user[0]) {
-                    await db.Booking.findOrCreate({
+                    let appointment = await db.Appointment.findOrCreate({
                         where: {
                             patientId: user[0].id,
                             doctorId: data.doctorId,
@@ -81,7 +83,49 @@ let postBookAppointment = (data) => {
                             timeType: data.timeType,
                             token: token,
                         },
+                        raw: false,
                     });
+                    if (
+                        appointment &&
+                        appointment[0] &&
+                        appointment[0].statusId === "S1"
+                    ) {
+                        appointment[0].token = token;
+                        await appointment[0].save();
+                    }
+                    if (
+                        appointment &&
+                        appointment[0] &&
+                        appointment[0].statusId === "S2"
+                    ) {
+                        isSendEmail = false;
+                        resolve({
+                            errCode: 4,
+                            errMessage:
+                                "Appointment already booked in this time slot",
+                        });
+                    }
+                }
+                if (isSendEmail === true) {
+                    // Send email notification
+                    emailService
+                        .sendEmail({
+                            receiverEmail: data.email,
+                            patientName: data.fullName,
+                            time: data.timeString,
+                            doctorName: data.doctorName,
+                            language: data.language,
+                            redirectLink: buildRedirectLink(
+                                data.doctorId,
+                                token
+                            ),
+                        })
+                        .catch((error) => {
+                            resolve({
+                                errCode: 2,
+                                errMessage: "Error sending email notification",
+                            });
+                        });
                 }
                 resolve({
                     errCode: 0,
@@ -103,7 +147,7 @@ let postVerifyBookAppointment = (data) => {
                     errMessage: "Missing required parameters",
                 });
             } else {
-                let appointment = await db.Booking.findOne({
+                let appointment = await db.Appointment.findOne({
                     where: {
                         doctorId: data.doctorId,
                         token: data.token,

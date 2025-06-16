@@ -2,8 +2,6 @@ import db from "../models/index";
 require("dotenv").config();
 import _ from "lodash";
 
-const MAX_NUMBER_SCHEDULES = process.env.MAX_NUMBER_SCHEDULES || 10;
-
 let getTopDoctorHome = (limit) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -176,7 +174,7 @@ let getDetailDoctorById = (id) => {
                     },
                     include: [
                         {
-                            model: db.Markdown,
+                            model: db.Doctor_Info,
                             attributes: [
                                 "description",
                                 "contentHTML",
@@ -194,7 +192,7 @@ let getDetailDoctorById = (id) => {
                             attributes: ["valueEn", "valueVi"],
                         },
                         {
-                            model: db.Doctor_Info,
+                            model: db.Doctor_Clinic_Specialty,
                             attributes: {
                                 exclude: [
                                     "id",
@@ -227,7 +225,7 @@ let getDetailDoctorById = (id) => {
                 });
 
                 if (data && data.image) {
-                    data.image = new Buffer(data.image, "base64").toString(
+                    data.image = Buffer.from(data.image, "base64").toString(
                         "binary"
                     );
                 }
@@ -256,7 +254,7 @@ let getExtraDoctorInfoById = (id) => {
                     errMessage: "Missing parameter",
                 });
             } else {
-                let data = await db.Doctor_Info.findOne({
+                let data = await db.Doctor_Clinic_Specialty.findOne({
                     where: { doctorId: id },
                     attributes: {
                         exclude: ["id", "doctorId", "createdAt", "updatedAt"],
@@ -269,15 +267,16 @@ let getExtraDoctorInfoById = (id) => {
                         },
                         {
                             model: db.Allcode,
-                            as: "provinceTypeData",
-                            attributes: ["valueEn", "valueVi"],
-                        },
-                        {
-                            model: db.Allcode,
                             as: "paymentTypeData",
                             attributes: ["valueEn", "valueVi"],
                         },
+                        {
+                            model: db.Clinic,
+                            as: "clinicData",
+                            attributes: ["name", "address"],
+                        },
                     ],
+
                     raw: false,
                     nest: true,
                 });
@@ -313,7 +312,7 @@ let getProfileDoctorById = (id) => {
                     },
                     include: [
                         {
-                            model: db.Markdown,
+                            model: db.Doctor_Info,
                             attributes: ["description"],
                         },
                         {
@@ -322,7 +321,7 @@ let getProfileDoctorById = (id) => {
                             attributes: ["valueEn", "valueVi"],
                         },
                         {
-                            model: db.Doctor_Info,
+                            model: db.Doctor_Clinic_Specialty,
                             attributes: {
                                 exclude: [
                                     "id",
@@ -355,7 +354,7 @@ let getProfileDoctorById = (id) => {
                 });
 
                 if (data && data.image) {
-                    data.image = new Buffer(data.image, "base64").toString(
+                    data.image = Buffer.from(data.image, "base64").toString(
                         "binary"
                     );
                 }
@@ -385,12 +384,6 @@ let bulkCreateSchedule = (data) => {
                 });
             } else {
                 let schedule = data.arrSchedule;
-                if (schedule && schedule.length > 0) {
-                    schedule = schedule.map((item) => {
-                        item.maxNumber = MAX_NUMBER_SCHEDULES;
-                        return item;
-                    });
-                }
 
                 // Check if the doctor exists
                 let existing = await db.Schedule.findAll({
@@ -398,13 +391,7 @@ let bulkCreateSchedule = (data) => {
                         doctorId: data.doctorId,
                         date: data.date,
                     },
-                    attributes: [
-                        "id",
-                        "timeType",
-                        "date",
-                        "doctorId",
-                        "maxNumber",
-                    ],
+                    attributes: ["id", "date", "timeType", "doctorId"],
                     raw: true,
                 });
 
@@ -512,7 +499,7 @@ let getListPatientForDoctor = (doctorId, date) => {
                     errMessage: "Missing parameter",
                 });
             } else {
-                let data = await db.Booking.findAll({
+                let data = await db.Appointment.findAll({
                     where: { statusId: "S2", doctorId: doctorId, date: date },
                     attributes: {
                         exclude: ["token", "createdAt", "updatedAt"],

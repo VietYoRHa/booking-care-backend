@@ -77,7 +77,7 @@ let getDetailClinicById = (id) => {
                 });
 
                 if (data) {
-                    let doctors = await db.Doctor_Info.findAll({
+                    let doctors = await db.Doctor_Clinic_Specialty.findAll({
                         where: {
                             clinicId: id,
                         },
