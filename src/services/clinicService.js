@@ -90,11 +90,10 @@ let deleteClinic = (id) => {
             } else {
                 let clinic = await db.Clinic.findOne({
                     where: { id: id },
+                    raw: false,
                 });
                 if (clinic) {
-                    await db.Clinic.destroy({
-                        where: { id: id },
-                    });
+                    await clinic.destroy();
                     resolve({
                         errCode: 0,
                         errMessage: "Delete clinic successfully",

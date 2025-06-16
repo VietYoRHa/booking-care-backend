@@ -31,6 +31,83 @@ let createNewSpecialty = (data) => {
     });
 };
 
+let editSpecialty = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (
+                !data.id ||
+                !data.name ||
+                !data.imageBase64 ||
+                !data.descriptionHTML ||
+                !data.descriptionMarkdown
+            ) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing required parameters",
+                });
+            } else {
+                let specialty = await db.Specialty.findOne({
+                    where: { id: data.id },
+                    raw: false,
+                });
+
+                if (specialty) {
+                    specialty.name = data.name;
+                    specialty.image = data.imageBase64;
+                    specialty.descriptionHTML = data.descriptionHTML;
+                    specialty.descriptionMarkdown = data.descriptionMarkdown;
+                    await specialty.save();
+
+                    resolve({
+                        errCode: 0,
+                        errMessage: "Update specialty successfully",
+                    });
+                } else {
+                    resolve({
+                        errCode: 2,
+                        errMessage: "Specialty not found",
+                    });
+                }
+            }
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
+let deleteSpecialty = (id) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!id) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing required parameter",
+                });
+            } else {
+                let specialty = await db.Specialty.findOne({
+                    where: { id: id },
+                    raw: false,
+                });
+
+                if (specialty) {
+                    await specialty.destroy();
+                    resolve({
+                        errCode: 0,
+                        errMessage: "Specialty deleted successfully",
+                    });
+                } else {
+                    resolve({
+                        errCode: 2,
+                        errMessage: "Specialty not found",
+                    });
+                }
+            }
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
 let getAllSpecialty = () => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -111,6 +188,8 @@ let getDetailSpecialtyById = (id, location) => {
 
 module.exports = {
     createNewSpecialty,
+    editSpecialty,
+    deleteSpecialty,
     getAllSpecialty,
     getDetailSpecialtyById,
 };

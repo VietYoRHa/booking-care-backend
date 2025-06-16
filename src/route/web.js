@@ -91,6 +91,18 @@ let initWebRoutes = (app) => {
         checkUserPermission([ROLES.ADMIN]),
         specialtyController.createNewSpecialty
     );
+    router.put(
+        "/api/edit-specialty",
+        checkUserJWT,
+        checkUserPermission([ROLES.ADMIN]),
+        specialtyController.editSpecialty
+    );
+    router.delete(
+        "/api/delete-specialty",
+        checkUserJWT,
+        checkUserPermission([ROLES.ADMIN]),
+        specialtyController.deleteSpecialty
+    );
     router.post(
         "/api/create-new-clinic",
         checkUserJWT,
