@@ -144,6 +144,18 @@ let initWebRoutes = (app) => {
         checkUserPermission([ROLES.DOCTOR]),
         doctorController.getListPatientForDoctor
     );
+    router.post(
+        "/api/confirm-appointment",
+        checkUserJWT,
+        checkUserPermission([ROLES.DOCTOR]),
+        appointmentController.confirmAppointment
+    );
+    router.post(
+        "/api/cancel-appointment",
+        checkUserJWT,
+        checkUserPermission([ROLES.DOCTOR]),
+        appointmentController.cancelAppointment
+    );
 
     return app.use("/", router);
 };

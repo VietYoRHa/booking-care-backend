@@ -179,7 +179,92 @@ let postVerifyBookAppointment = (data) => {
     });
 };
 
+let confirmAppointment = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data.id || !data.statusId) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing required parameters",
+                });
+            } else {
+                let appointment = await db.Appointment.findOne({
+                    where: { id: data.id },
+                    raw: false,
+                });
+
+                if (appointment) {
+                    appointment.statusId = data.statusId;
+                    await appointment.save();
+                    resolve({
+                        errCode: 0,
+                        errMessage: "Appointment status updated successfully",
+                    });
+                } else {
+                    resolve({
+                        errCode: 2,
+                        errMessage: "Appointment not found",
+                    });
+                }
+            }
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
+let cancelAppointment = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data.id) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing required parameters",
+                });
+            } else {
+                let appointment = await db.Appointment.findOne({
+                    where: { id: data.id, statusId: "S2" },
+                    raw: false,
+                });
+
+                if (appointment) {
+                    appointment.statusId = "S4";
+                    await appointment.save();
+                    emailService
+                        .sendCancelEmail({
+                            receiverEmail: data.email,
+                            patientName: data.fullName,
+                            time: data.timeString,
+                            doctorName: data.doctorName,
+                            language: data.language,
+                            cancelReason: data.cancelReason,
+                        })
+                        .catch((error) => {
+                            resolve({
+                                errCode: 2,
+                                errMessage: "Error sending cancellation email",
+                            });
+                        });
+                    resolve({
+                        errCode: 0,
+                        errMessage: "Appointment cancelled successfully",
+                    });
+                } else {
+                    resolve({
+                        errCode: 2,
+                        errMessage: "Appointment not found",
+                    });
+                }
+            }
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
 module.exports = {
     postBookAppointment,
     postVerifyBookAppointment,
+    confirmAppointment,
+    cancelAppointment,
 };
