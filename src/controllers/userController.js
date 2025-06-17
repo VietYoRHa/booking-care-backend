@@ -73,6 +73,23 @@ let getAllCode = async (req, res) => {
     }
 };
 
+let search = async (req, res) => {
+    try {
+        let keyword = req.query.keyword;
+        let data = await userService.search(keyword);
+        return res.status(200).json(data);
+    } catch (e) {
+        console.error("Error from service search: ", e);
+        return res.status(200).json({
+            errCode: -1,
+            message: "Error from server",
+            doctors: [],
+            specialties: [],
+            clinics: [],
+        });
+    }
+};
+
 module.exports = {
     handleLogin: handleLogin,
     getAllUsers: getAllUsers,
@@ -80,4 +97,5 @@ module.exports = {
     editUser: editUser,
     deleteUser: deleteUser,
     getAllCode: getAllCode,
+    search: search,
 };

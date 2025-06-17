@@ -2,8 +2,6 @@ import db from "../models/index";
 require("dotenv").config();
 import _ from "lodash";
 
-const MAX_NUMBER_SCHEDULES = process.env.MAX_NUMBER_SCHEDULES || 10;
-
 let getTopDoctorHome = (limit) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -29,6 +27,14 @@ let getTopDoctorHome = (limit) => {
                 raw: true,
                 nest: true,
             });
+            if (doctors && doctors.length > 0) {
+                doctors = doctors.map((item) => {
+                    item.image = Buffer.from(item.image, "base64").toString(
+                        "binary"
+                    );
+                    return item;
+                });
+            }
             resolve({
                 errCode: 0,
                 data: doctors,
@@ -45,9 +51,36 @@ let getAllDoctors = () => {
             let doctors = await db.User.findAll({
                 where: { roleId: "R2" },
                 attributes: {
-                    exclude: ["password", "image"],
+                    exclude: ["password"],
                 },
+                include: [
+                    {
+                        model: db.Doctor_Info,
+                        attributes: ["description"],
+                    },
+                    {
+                        model: db.Allcode,
+                        as: "positionData",
+                        attributes: ["valueEn", "valueVi"],
+                    },
+                    {
+                        model: db.Allcode,
+                        as: "genderData",
+                        attributes: ["valueEn", "valueVi"],
+                    },
+                ],
+                raw: true,
+                nest: true,
             });
+
+            if (doctors && doctors.length > 0) {
+                doctors = doctors.map((item) => {
+                    item.image = Buffer.from(item.image, "base64").toString(
+                        "binary"
+                    );
+                    return item;
+                });
+            }
             resolve({
                 errCode: 0,
                 data: doctors,
@@ -68,8 +101,6 @@ let checkRequiredFields = (data) => {
         "selectedPayment",
         "selectedProvince",
         "selectedSpecialty",
-        "nameClinic",
-        "addressClinic",
     ];
     let isValid = true;
     let missingField = "";
@@ -96,16 +127,16 @@ let saveDetailInfoDoctor = (data) => {
                     errMessage: `Missing parameter: ${checkFields.missingField}`,
                 });
             } else {
-                // Upsert Markdown table
+                // Upsert Doctor_Info table
                 if (data.action === "CREATE") {
-                    await db.Markdown.create({
+                    await db.Doctor_Info.create({
                         contentHTML: data.contentHTML,
                         contentMarkdown: data.contentMarkdown,
                         doctorId: data.doctorId,
                         description: data.description,
                     });
                 } else if (data.action === "EDIT") {
-                    let doctorMarkdown = await db.Markdown.findOne({
+                    let doctorMarkdown = await db.Doctor_Info.findOne({
                         where: { doctorId: data.doctorId },
                         raw: false,
                     });
@@ -118,7 +149,7 @@ let saveDetailInfoDoctor = (data) => {
                 }
 
                 // Upsert Doctor Info table
-                let doctorInfo = await db.Doctor_Info.findOne({
+                let doctorInfo = await db.Doctor_Clinic_Specialty.findOne({
                     where: { doctorId: data.doctorId },
                     raw: false,
                 });
@@ -130,21 +161,17 @@ let saveDetailInfoDoctor = (data) => {
                     doctorInfo.priceId = data.selectedPrice;
                     doctorInfo.paymentId = data.selectedPayment;
                     doctorInfo.provinceId = data.selectedProvince;
-                    doctorInfo.nameClinic = data.nameClinic;
-                    doctorInfo.addressClinic = data.addressClinic;
                     doctorInfo.note = data.note;
                     await doctorInfo.save();
                 } else {
                     // Create new record
-                    await db.Doctor_Info.create({
+                    await db.Doctor_Clinic_Specialty.create({
                         doctorId: data.doctorId,
                         specialtyId: data.selectedSpecialty,
                         clinicId: data.selectedClinic,
                         priceId: data.selectedPrice,
                         paymentId: data.selectedPayment,
                         provinceId: data.selectedProvince,
-                        nameClinic: data.nameClinic,
-                        addressClinic: data.addressClinic,
                         note: data.note,
                     });
                 }
@@ -176,7 +203,7 @@ let getDetailDoctorById = (id) => {
                     },
                     include: [
                         {
-                            model: db.Markdown,
+                            model: db.Doctor_Info,
                             attributes: [
                                 "description",
                                 "contentHTML",
@@ -194,7 +221,7 @@ let getDetailDoctorById = (id) => {
                             attributes: ["valueEn", "valueVi"],
                         },
                         {
-                            model: db.Doctor_Info,
+                            model: db.Doctor_Clinic_Specialty,
                             attributes: {
                                 exclude: [
                                     "id",
@@ -227,7 +254,7 @@ let getDetailDoctorById = (id) => {
                 });
 
                 if (data && data.image) {
-                    data.image = new Buffer(data.image, "base64").toString(
+                    data.image = Buffer.from(data.image, "base64").toString(
                         "binary"
                     );
                 }
@@ -256,7 +283,7 @@ let getExtraDoctorInfoById = (id) => {
                     errMessage: "Missing parameter",
                 });
             } else {
-                let data = await db.Doctor_Info.findOne({
+                let data = await db.Doctor_Clinic_Specialty.findOne({
                     where: { doctorId: id },
                     attributes: {
                         exclude: ["id", "doctorId", "createdAt", "updatedAt"],
@@ -269,15 +296,16 @@ let getExtraDoctorInfoById = (id) => {
                         },
                         {
                             model: db.Allcode,
-                            as: "provinceTypeData",
-                            attributes: ["valueEn", "valueVi"],
-                        },
-                        {
-                            model: db.Allcode,
                             as: "paymentTypeData",
                             attributes: ["valueEn", "valueVi"],
                         },
+                        {
+                            model: db.Clinic,
+                            as: "clinicData",
+                            attributes: ["name", "address"],
+                        },
                     ],
+
                     raw: false,
                     nest: true,
                 });
@@ -313,7 +341,7 @@ let getProfileDoctorById = (id) => {
                     },
                     include: [
                         {
-                            model: db.Markdown,
+                            model: db.Doctor_Info,
                             attributes: ["description"],
                         },
                         {
@@ -322,7 +350,7 @@ let getProfileDoctorById = (id) => {
                             attributes: ["valueEn", "valueVi"],
                         },
                         {
-                            model: db.Doctor_Info,
+                            model: db.Doctor_Clinic_Specialty,
                             attributes: {
                                 exclude: [
                                     "id",
@@ -355,7 +383,7 @@ let getProfileDoctorById = (id) => {
                 });
 
                 if (data && data.image) {
-                    data.image = new Buffer(data.image, "base64").toString(
+                    data.image = Buffer.from(data.image, "base64").toString(
                         "binary"
                     );
                 }
@@ -385,12 +413,6 @@ let bulkCreateSchedule = (data) => {
                 });
             } else {
                 let schedule = data.arrSchedule;
-                if (schedule && schedule.length > 0) {
-                    schedule = schedule.map((item) => {
-                        item.maxNumber = MAX_NUMBER_SCHEDULES;
-                        return item;
-                    });
-                }
 
                 // Check if the doctor exists
                 let existing = await db.Schedule.findAll({
@@ -398,13 +420,7 @@ let bulkCreateSchedule = (data) => {
                         doctorId: data.doctorId,
                         date: data.date,
                     },
-                    attributes: [
-                        "id",
-                        "timeType",
-                        "date",
-                        "doctorId",
-                        "maxNumber",
-                    ],
+                    attributes: ["id", "date", "timeType", "doctorId"],
                     raw: true,
                 });
 
@@ -512,7 +528,7 @@ let getListPatientForDoctor = (doctorId, date) => {
                     errMessage: "Missing parameter",
                 });
             } else {
-                let data = await db.Booking.findAll({
+                let data = await db.Appointment.findAll({
                     where: { statusId: "S2", doctorId: doctorId, date: date },
                     attributes: {
                         exclude: ["token", "createdAt", "updatedAt"],
@@ -524,6 +540,7 @@ let getListPatientForDoctor = (doctorId, date) => {
                             attributes: [
                                 "email",
                                 "firstName",
+                                "lastName",
                                 "phoneNumber",
                                 "address",
                                 "gender",

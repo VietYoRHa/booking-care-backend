@@ -1,4 +1,5 @@
 import db from "../models/index";
+import { Op } from "sequelize";
 import bcrypt from "bcryptjs";
 import { createJWT } from "../middleware/authMiddleware";
 
@@ -110,6 +111,17 @@ let getAllUsers = (userId) => {
                     attributes: {
                         exclude: ["password"],
                     },
+                });
+            }
+
+            if (users && users.length > 0) {
+                users = users.map((item) => {
+                    if (item.image) {
+                        item.image = Buffer.from(item.image, "base64").toString(
+                            "binary"
+                        );
+                    }
+                    return item;
                 });
             }
             resolve(users);
@@ -246,6 +258,111 @@ let getAllCodeService = (typeInput) => {
     });
 };
 
+let search = (keyword) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!keyword) {
+                resolve({
+                    errCode: 1,
+                    message: "Missing keyword parameter",
+                    doctors: [],
+                    specialties: [],
+                    clinics: [],
+                });
+            } else {
+                let doctors = await db.User.findAll({
+                    where: {
+                        roleId: "R2",
+                        [Op.or]: [
+                            { firstName: { [Op.like]: `%${keyword}%` } },
+                            { lastName: { [Op.like]: `%${keyword}%` } },
+                        ],
+                    },
+                    attributes: {
+                        exclude: ["password"],
+                    },
+                    include: [
+                        {
+                            model: db.Doctor_Info,
+                            attributes: ["description"],
+                        },
+                        {
+                            model: db.Allcode,
+                            as: "positionData",
+                            attributes: ["valueEn", "valueVi"],
+                        },
+                        {
+                            model: db.Allcode,
+                            as: "genderData",
+                            attributes: ["valueEn", "valueVi"],
+                        },
+                    ],
+                    raw: false,
+                    nest: true,
+                });
+
+                if (doctors && doctors.length > 0) {
+                    doctors = doctors.map((item) => {
+                        if (item.image) {
+                            item.image = Buffer.from(
+                                item.image,
+                                "base64"
+                            ).toString("binary");
+                        }
+                        return item;
+                    });
+                }
+
+                let specialties = await db.Specialty.findAll({
+                    where: {
+                        name: { [Op.like]: `%${keyword}%` },
+                    },
+                });
+                if (specialties && specialties.length > 0) {
+                    specialties = specialties.map((item) => {
+                        if (item.image) {
+                            item.image = Buffer.from(
+                                item.image,
+                                "base64"
+                            ).toString("binary");
+                        }
+                        return item;
+                    });
+                }
+
+                let clinics = await db.Clinic.findAll({
+                    where: {
+                        [Op.or]: [
+                            { name: { [Op.like]: `%${keyword}%` } },
+                            { address: { [Op.like]: `%${keyword}%` } },
+                        ],
+                    },
+                });
+                if (clinics && clinics.length > 0) {
+                    clinics = clinics.map((item) => {
+                        if (item.image) {
+                            item.image = Buffer.from(
+                                item.image,
+                                "base64"
+                            ).toString("binary");
+                        }
+                        return item;
+                    });
+                }
+                resolve({
+                    errCode: 0,
+                    message: "OK",
+                    doctors,
+                    specialties,
+                    clinics,
+                });
+            }
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
 module.exports = {
     handleUserLogin: handleUserLogin,
     getAllUsers: getAllUsers,
@@ -253,4 +370,5 @@ module.exports = {
     deleteUser: deleteUser,
     updateUser: updateUser,
     getAllCodeService: getAllCodeService,
+    search: search,
 };
