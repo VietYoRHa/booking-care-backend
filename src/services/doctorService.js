@@ -27,6 +27,14 @@ let getTopDoctorHome = (limit) => {
                 raw: true,
                 nest: true,
             });
+            if (doctors && doctors.length > 0) {
+                doctors = doctors.map((item) => {
+                    item.image = Buffer.from(item.image, "base64").toString(
+                        "binary"
+                    );
+                    return item;
+                });
+            }
             resolve({
                 errCode: 0,
                 data: doctors,
@@ -43,9 +51,36 @@ let getAllDoctors = () => {
             let doctors = await db.User.findAll({
                 where: { roleId: "R2" },
                 attributes: {
-                    exclude: ["password", "image"],
+                    exclude: ["password"],
                 },
+                include: [
+                    {
+                        model: db.Doctor_Info,
+                        attributes: ["description"],
+                    },
+                    {
+                        model: db.Allcode,
+                        as: "positionData",
+                        attributes: ["valueEn", "valueVi"],
+                    },
+                    {
+                        model: db.Allcode,
+                        as: "genderData",
+                        attributes: ["valueEn", "valueVi"],
+                    },
+                ],
+                raw: true,
+                nest: true,
             });
+
+            if (doctors && doctors.length > 0) {
+                doctors = doctors.map((item) => {
+                    item.image = Buffer.from(item.image, "base64").toString(
+                        "binary"
+                    );
+                    return item;
+                });
+            }
             resolve({
                 errCode: 0,
                 data: doctors,
