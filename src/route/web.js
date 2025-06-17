@@ -59,6 +59,7 @@ let initWebRoutes = (app) => {
         appointmentController.postVerifyBookAppointment
     );
     router.get("/api/allcode", userController.getAllCode);
+    router.get("/api/search", userController.search);
 
     // Routes chỉ dành cho Admin
     router.get(
