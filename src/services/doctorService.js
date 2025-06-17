@@ -130,7 +130,7 @@ let saveDetailInfoDoctor = (data) => {
                     await doctorInfo.save();
                 } else {
                     // Create new record
-                    await db.Doctor_Info.create({
+                    await db.Doctor_Clinic_Specialty.create({
                         doctorId: data.doctorId,
                         specialtyId: data.selectedSpecialty,
                         clinicId: data.selectedClinic,
