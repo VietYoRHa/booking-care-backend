@@ -112,6 +112,17 @@ let getAllUsers = (userId) => {
                     },
                 });
             }
+
+            if (users && users.length > 0) {
+                users = users.map((item) => {
+                    if (item.image) {
+                        item.image = Buffer.from(item.image, "base64").toString(
+                            "binary"
+                        );
+                    }
+                    return item;
+                });
+            }
             resolve(users);
         } catch (error) {
             reject(error);
