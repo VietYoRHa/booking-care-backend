@@ -196,6 +196,22 @@ let completeAppointment = (data) => {
                 if (appointment) {
                     appointment.statusId = "S3";
                     await appointment.save();
+
+                    try {
+                        let doctorInfo = await db.Doctor_Info.findOne({
+                            where: { doctorId: appointment.doctorId },
+                            raw: false,
+                        });
+
+                        if (doctorInfo) {
+                            doctorInfo.appointmentCount =
+                                doctorInfo.appointmentCount
+                                    ? doctorInfo.appointmentCount + 1
+                                    : 1;
+                            await doctorInfo.save();
+                        }
+                    } catch (countError) {}
+
                     emailService
                         .sendCompleteEmail({
                             receiverEmail: data.email,

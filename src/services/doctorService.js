@@ -7,7 +7,6 @@ let getTopDoctorHome = (limit) => {
         try {
             let doctors = await db.User.findAll({
                 limit: limit,
-                order: [["createdAt", "DESC"]],
                 where: { roleId: "R2" },
                 attributes: {
                     exclude: ["password"],
@@ -23,7 +22,13 @@ let getTopDoctorHome = (limit) => {
                         as: "genderData",
                         attributes: ["valueEn", "valueVi"],
                     },
+                    {
+                        model: db.Doctor_Info,
+                        attributes: ["appointmentCount"],
+                        required: true,
+                    },
                 ],
+                order: [[db.Doctor_Info, "appointmentCount", "DESC"]],
                 raw: true,
                 nest: true,
             });
@@ -32,6 +37,12 @@ let getTopDoctorHome = (limit) => {
                     item.image = Buffer.from(item.image, "base64").toString(
                         "binary"
                     );
+                    if (
+                        item.Doctor_Info &&
+                        item.Doctor_Info.appointmentCount === null
+                    ) {
+                        item.Doctor_Info.appointmentCount = 0;
+                    }
                     return item;
                 });
             }
