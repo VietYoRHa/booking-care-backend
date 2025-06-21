@@ -24,6 +24,10 @@ module.exports = {
                 type: Sequelize.TEXT("long"),
                 allowNull: true,
             },
+            appointmentCount: {
+                type: Sequelize.INTEGER,
+                allowNull: true,
+            },
             createdAt: {
                 allowNull: false,
                 type: Sequelize.DATE,

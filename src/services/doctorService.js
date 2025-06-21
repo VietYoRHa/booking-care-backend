@@ -134,6 +134,7 @@ let saveDetailInfoDoctor = (data) => {
                         contentMarkdown: data.contentMarkdown,
                         doctorId: data.doctorId,
                         description: data.description,
+                        appointmentCount: 0,
                     });
                 } else if (data.action === "EDIT") {
                     let doctorMarkdown = await db.Doctor_Info.findOne({
@@ -148,7 +149,7 @@ let saveDetailInfoDoctor = (data) => {
                     }
                 }
 
-                // Upsert Doctor Info table
+                // Upsert Doctor_Clinic_Specialty table
                 let doctorInfo = await db.Doctor_Clinic_Specialty.findOne({
                     where: { doctorId: data.doctorId },
                     raw: false,
