@@ -132,10 +132,10 @@ let initWebRoutes = (app) => {
         doctorController.postInfoDoctor
     );
     router.post(
-        "/api/bulk-create-schedule",
+        "/api/create-schedule",
         checkUserJWT,
         checkUserPermission([ROLES.ADMIN, ROLES.DOCTOR]),
-        doctorController.bulkCreateSchedule
+        doctorController.createSchedule
     );
 
     // Routes chỉ dành cho bác sĩ

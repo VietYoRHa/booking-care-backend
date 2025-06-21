@@ -403,7 +403,7 @@ let getProfileDoctorById = (id) => {
     });
 };
 
-let bulkCreateSchedule = (data) => {
+let createSchedule = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
             if (!data.arrSchedule || !data.doctorId || !data.date) {
@@ -586,7 +586,7 @@ module.exports = {
     getDetailDoctorById: getDetailDoctorById,
     getExtraDoctorInfoById: getExtraDoctorInfoById,
     getProfileDoctorById: getProfileDoctorById,
-    bulkCreateSchedule: bulkCreateSchedule,
+    createSchedule: createSchedule,
     getScheduleDoctorByDate: getScheduleDoctorByDate,
     getListPatientForDoctor: getListPatientForDoctor,
 };
