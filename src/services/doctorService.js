@@ -7,7 +7,6 @@ let getTopDoctorHome = (limit) => {
         try {
             let doctors = await db.User.findAll({
                 limit: limit,
-                order: [["createdAt", "DESC"]],
                 where: { roleId: "R2" },
                 attributes: {
                     exclude: ["password"],
@@ -23,7 +22,13 @@ let getTopDoctorHome = (limit) => {
                         as: "genderData",
                         attributes: ["valueEn", "valueVi"],
                     },
+                    {
+                        model: db.Doctor_Info,
+                        attributes: ["appointmentCount"],
+                        required: true,
+                    },
                 ],
+                order: [[db.Doctor_Info, "appointmentCount", "DESC"]],
                 raw: true,
                 nest: true,
             });
@@ -32,6 +37,12 @@ let getTopDoctorHome = (limit) => {
                     item.image = Buffer.from(item.image, "base64").toString(
                         "binary"
                     );
+                    if (
+                        item.Doctor_Info &&
+                        item.Doctor_Info.appointmentCount === null
+                    ) {
+                        item.Doctor_Info.appointmentCount = 0;
+                    }
                     return item;
                 });
             }
@@ -134,6 +145,7 @@ let saveDetailInfoDoctor = (data) => {
                         contentMarkdown: data.contentMarkdown,
                         doctorId: data.doctorId,
                         description: data.description,
+                        appointmentCount: 0,
                     });
                 } else if (data.action === "EDIT") {
                     let doctorMarkdown = await db.Doctor_Info.findOne({
@@ -148,7 +160,7 @@ let saveDetailInfoDoctor = (data) => {
                     }
                 }
 
-                // Upsert Doctor Info table
+                // Upsert Doctor_Clinic_Specialty table
                 let doctorInfo = await db.Doctor_Clinic_Specialty.findOne({
                     where: { doctorId: data.doctorId },
                     raw: false,
@@ -403,7 +415,7 @@ let getProfileDoctorById = (id) => {
     });
 };
 
-let bulkCreateSchedule = (data) => {
+let createSchedule = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
             if (!data.arrSchedule || !data.doctorId || !data.date) {
@@ -586,7 +598,7 @@ module.exports = {
     getDetailDoctorById: getDetailDoctorById,
     getExtraDoctorInfoById: getExtraDoctorInfoById,
     getProfileDoctorById: getProfileDoctorById,
-    bulkCreateSchedule: bulkCreateSchedule,
+    createSchedule: createSchedule,
     getScheduleDoctorByDate: getScheduleDoctorByDate,
     getListPatientForDoctor: getListPatientForDoctor,
 };
