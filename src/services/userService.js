@@ -255,6 +255,56 @@ let deleteUser = (userId) => {
                         },
                     }
                 );
+            } else if (foundUser.roleId === USER_ROLES.PATIENT) {
+                const hasConfirmedAppointments = await db.Appointment.findOne({
+                    where: {
+                        patientId: userId,
+                        statusId: APPOINTMENT_STATUS.CONFIRMED,
+                    },
+                    attributes: ["id"],
+                });
+
+                if (hasConfirmedAppointments) {
+                    resolve({
+                        errCode: 5,
+                        errMessage:
+                            "Cannot delete patient with confirmed appointments!",
+                    });
+                    return;
+                }
+
+                const hasPendingAppointments = await db.Appointment.findOne({
+                    where: {
+                        patientId: userId,
+                        statusId: APPOINTMENT_STATUS.NEW,
+                    },
+                    attributes: ["id"],
+                });
+
+                if (hasPendingAppointments) {
+                    resolve({
+                        errCode: 6,
+                        errMessage:
+                            "Cannot delete patient with pending appointments!",
+                    });
+                    return;
+                }
+
+                await db.Appointment.update(
+                    {
+                        patientId: null,
+                        updatedAt: new Date(),
+                    },
+                    {
+                        where: {
+                            patientId: userId,
+                            statusId: [
+                                APPOINTMENT_STATUS.DONE,
+                                APPOINTMENT_STATUS.CANCEL,
+                            ],
+                        },
+                    }
+                );
             }
 
             await foundUser.destroy();
