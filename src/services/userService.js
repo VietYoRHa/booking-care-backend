@@ -2,6 +2,7 @@ import db from "../models/index";
 import { Op } from "sequelize";
 import bcrypt from "bcryptjs";
 import { createJWT } from "../middleware/authMiddleware";
+import { APPOINTMENT_STATUS, USER_ROLES } from "../constants/constant";
 
 const salt = bcrypt.genSaltSync(10);
 
@@ -171,25 +172,100 @@ let createNewUser = (data) => {
 
 let deleteUser = (userId) => {
     return new Promise(async (resolve, reject) => {
-        let foundUser = await db.User.findOne({
-            where: {
-                id: userId,
-            },
-            raw: false,
-        });
-        if (!foundUser) {
-            resolve({
-                errCode: 2,
-                errMessage: "User is not existed!",
+        try {
+            let foundUser = await db.User.findOne({
+                where: {
+                    id: userId,
+                },
+                raw: false,
             });
-        } else {
-            await foundUser.destroy();
-        }
+            if (!foundUser) {
+                resolve({
+                    errCode: 2,
+                    errMessage: "User is not existed!",
+                });
+                return;
+            }
 
-        resolve({
-            errCode: 0,
-            errMessage: "User is deleted!",
-        });
+            if (foundUser.roleId === USER_ROLES.DOCTOR) {
+                const hasConfirmedAppointments = await db.Appointment.findOne({
+                    where: {
+                        doctorId: userId,
+                        statusId: APPOINTMENT_STATUS.CONFIRMED,
+                    },
+                    attributes: ["id"],
+                });
+
+                if (hasConfirmedAppointments) {
+                    resolve({
+                        errCode: 3,
+                        errMessage:
+                            "Cannot delete doctor with confirmed appointments!",
+                    });
+                    return;
+                }
+
+                const hasPendingAppointments = await db.Appointment.findOne({
+                    where: {
+                        doctorId: userId,
+                        statusId: APPOINTMENT_STATUS.NEW,
+                    },
+                    attributes: ["id"],
+                });
+
+                if (hasPendingAppointments) {
+                    resolve({
+                        errCode: 4,
+                        errMessage:
+                            "Cannot delete doctor with pending appointments!",
+                    });
+                    return;
+                }
+
+                await db.Doctor_Clinic_Specialty.destroy({
+                    where: {
+                        doctorId: userId,
+                    },
+                });
+
+                await db.Doctor_Info.destroy({
+                    where: {
+                        doctorId: userId,
+                    },
+                });
+
+                await db.Schedule.destroy({
+                    where: {
+                        doctorId: userId,
+                    },
+                });
+
+                await db.Appointment.update(
+                    {
+                        doctorId: null,
+                        updatedAt: new Date(),
+                    },
+                    {
+                        where: {
+                            doctorId: userId,
+                            statusId: [
+                                APPOINTMENT_STATUS.DONE,
+                                APPOINTMENT_STATUS.CANCEL,
+                            ],
+                        },
+                    }
+                );
+            }
+
+            await foundUser.destroy();
+
+            resolve({
+                errCode: 0,
+                errMessage: "User is deleted successfully!",
+            });
+        } catch (error) {
+            reject(error);
+        }
     });
 };
 
