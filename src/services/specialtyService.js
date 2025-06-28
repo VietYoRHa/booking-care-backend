@@ -83,25 +83,40 @@ let deleteSpecialty = (id) => {
                     errCode: 1,
                     errMessage: "Missing required parameter",
                 });
-            } else {
-                let specialty = await db.Specialty.findOne({
-                    where: { id: id },
-                    raw: false,
-                });
-
-                if (specialty) {
-                    await specialty.destroy();
-                    resolve({
-                        errCode: 0,
-                        errMessage: "Specialty deleted successfully",
-                    });
-                } else {
-                    resolve({
-                        errCode: 2,
-                        errMessage: "Specialty not found",
-                    });
-                }
+                return;
             }
+            let specialty = await db.Specialty.findOne({
+                where: { id: id },
+                raw: false,
+            });
+
+            if (!specialty) {
+                resolve({
+                    errCode: 2,
+                    errMessage: "Specialty not found",
+                });
+                return;
+            }
+
+            const hasLinkedDoctors = await db.Doctor_Clinic_Specialty.findOne({
+                where: { specialtyId: id },
+                attributes: ["id"],
+            });
+
+            if (hasLinkedDoctors) {
+                resolve({
+                    errCode: 3,
+                    errMessage:
+                        "Cannot delete specialty that has linked doctors!",
+                });
+                return;
+            }
+            await specialty.destroy();
+
+            resolve({
+                errCode: 0,
+                errMessage: "Specialty deleted successfully",
+            });
         } catch (error) {
             reject(error);
         }
