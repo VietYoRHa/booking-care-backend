@@ -87,24 +87,42 @@ let deleteClinic = (id) => {
                     errCode: 1,
                     errMessage: "Missing required parameters",
                 });
-            } else {
-                let clinic = await db.Clinic.findOne({
-                    where: { id: id },
-                    raw: false,
-                });
-                if (clinic) {
-                    await clinic.destroy();
-                    resolve({
-                        errCode: 0,
-                        errMessage: "Delete clinic successfully",
-                    });
-                } else {
-                    resolve({
-                        errCode: 2,
-                        errMessage: "Clinic not found",
-                    });
-                }
+                return;
             }
+
+            let clinic = await db.Clinic.findOne({
+                where: { id: id },
+                raw: false,
+            });
+
+            if (!clinic) {
+                resolve({
+                    errCode: 2,
+                    errMessage: "Clinic not found",
+                });
+                return;
+            }
+
+            const hasWorkingDoctors = await db.Doctor_Clinic_Specialty.findOne({
+                where: { clinicId: id },
+                attributes: ["id"],
+            });
+
+            if (hasWorkingDoctors) {
+                resolve({
+                    errCode: 3,
+                    errMessage:
+                        "Cannot delete clinic that has working doctors!",
+                });
+                return;
+            }
+
+            await clinic.destroy();
+
+            resolve({
+                errCode: 0,
+                errMessage: "Delete clinic successfully",
+            });
         } catch (error) {
             reject(error);
         }
