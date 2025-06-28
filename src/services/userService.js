@@ -188,36 +188,16 @@ let deleteUser = (userId) => {
             }
 
             if (foundUser.roleId === USER_ROLES.DOCTOR) {
-                const hasConfirmedAppointments = await db.Appointment.findOne({
-                    where: {
-                        doctorId: userId,
-                        statusId: APPOINTMENT_STATUS.CONFIRMED,
-                    },
+                const hasAppointments = await db.Appointment.findOne({
+                    where: { doctorId: userId },
                     attributes: ["id"],
                 });
 
-                if (hasConfirmedAppointments) {
+                if (hasAppointments) {
                     resolve({
                         errCode: 3,
                         errMessage:
-                            "Cannot delete doctor with confirmed appointments!",
-                    });
-                    return;
-                }
-
-                const hasPendingAppointments = await db.Appointment.findOne({
-                    where: {
-                        doctorId: userId,
-                        statusId: APPOINTMENT_STATUS.NEW,
-                    },
-                    attributes: ["id"],
-                });
-
-                if (hasPendingAppointments) {
-                    resolve({
-                        errCode: 4,
-                        errMessage:
-                            "Cannot delete doctor with pending appointments!",
+                            "Cannot delete doctor with existing appointments!",
                     });
                     return;
                 }
@@ -239,72 +219,20 @@ let deleteUser = (userId) => {
                         doctorId: userId,
                     },
                 });
-
-                await db.Appointment.update(
-                    {
-                        doctorId: null,
-                        updatedAt: new Date(),
-                    },
-                    {
-                        where: {
-                            doctorId: userId,
-                            statusId: [
-                                APPOINTMENT_STATUS.DONE,
-                                APPOINTMENT_STATUS.CANCEL,
-                            ],
-                        },
-                    }
-                );
             } else if (foundUser.roleId === USER_ROLES.PATIENT) {
-                const hasConfirmedAppointments = await db.Appointment.findOne({
-                    where: {
-                        patientId: userId,
-                        statusId: APPOINTMENT_STATUS.CONFIRMED,
-                    },
+                const hasAppointments = await db.Appointment.findOne({
+                    where: { patientId: userId },
                     attributes: ["id"],
                 });
 
-                if (hasConfirmedAppointments) {
+                if (hasAppointments) {
                     resolve({
-                        errCode: 5,
+                        errCode: 4,
                         errMessage:
-                            "Cannot delete patient with confirmed appointments!",
+                            "Cannot delete patient with existing appointments!",
                     });
                     return;
                 }
-
-                const hasPendingAppointments = await db.Appointment.findOne({
-                    where: {
-                        patientId: userId,
-                        statusId: APPOINTMENT_STATUS.NEW,
-                    },
-                    attributes: ["id"],
-                });
-
-                if (hasPendingAppointments) {
-                    resolve({
-                        errCode: 6,
-                        errMessage:
-                            "Cannot delete patient with pending appointments!",
-                    });
-                    return;
-                }
-
-                await db.Appointment.update(
-                    {
-                        patientId: null,
-                        updatedAt: new Date(),
-                    },
-                    {
-                        where: {
-                            patientId: userId,
-                            statusId: [
-                                APPOINTMENT_STATUS.DONE,
-                                APPOINTMENT_STATUS.CANCEL,
-                            ],
-                        },
-                    }
-                );
             }
 
             await foundUser.destroy();
