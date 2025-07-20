@@ -99,7 +99,9 @@ let postBookAppointment = (data) => {
                     if (
                         appointment &&
                         appointment[0] &&
-                        appointment[0].statusId === "S2"
+                        (appointment[0].statusId === "S2" ||
+                            appointment[0].statusId === "S3" ||
+                            appointment[0].statusId === "S4")
                     ) {
                         isSendEmail = false;
                         resolve({
@@ -107,6 +109,7 @@ let postBookAppointment = (data) => {
                             errMessage:
                                 "Appointment already booked in this time slot",
                         });
+                        return;
                     }
                 }
                 if (isSendEmail === true) {

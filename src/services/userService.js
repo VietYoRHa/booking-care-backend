@@ -2,6 +2,7 @@ import db from "../models/index";
 import { Op } from "sequelize";
 import bcrypt from "bcryptjs";
 import { createJWT } from "../middleware/authMiddleware";
+import { APPOINTMENT_STATUS, USER_ROLES } from "../constants/constant";
 
 const salt = bcrypt.genSaltSync(10);
 
@@ -171,25 +172,78 @@ let createNewUser = (data) => {
 
 let deleteUser = (userId) => {
     return new Promise(async (resolve, reject) => {
-        let foundUser = await db.User.findOne({
-            where: {
-                id: userId,
-            },
-            raw: false,
-        });
-        if (!foundUser) {
-            resolve({
-                errCode: 2,
-                errMessage: "User is not existed!",
+        try {
+            let foundUser = await db.User.findOne({
+                where: {
+                    id: userId,
+                },
+                raw: false,
             });
-        } else {
-            await foundUser.destroy();
-        }
+            if (!foundUser) {
+                resolve({
+                    errCode: 2,
+                    errMessage: "User is not existed!",
+                });
+                return;
+            }
 
-        resolve({
-            errCode: 0,
-            errMessage: "User is deleted!",
-        });
+            if (foundUser.roleId === USER_ROLES.DOCTOR) {
+                const hasAppointments = await db.Appointment.findOne({
+                    where: { doctorId: userId },
+                    attributes: ["id"],
+                });
+
+                if (hasAppointments) {
+                    resolve({
+                        errCode: 3,
+                        errMessage:
+                            "Cannot delete doctor with existing appointments!",
+                    });
+                    return;
+                }
+
+                await db.Doctor_Clinic_Specialty.destroy({
+                    where: {
+                        doctorId: userId,
+                    },
+                });
+
+                await db.Doctor_Info.destroy({
+                    where: {
+                        doctorId: userId,
+                    },
+                });
+
+                await db.Schedule.destroy({
+                    where: {
+                        doctorId: userId,
+                    },
+                });
+            } else if (foundUser.roleId === USER_ROLES.PATIENT) {
+                const hasAppointments = await db.Appointment.findOne({
+                    where: { patientId: userId },
+                    attributes: ["id"],
+                });
+
+                if (hasAppointments) {
+                    resolve({
+                        errCode: 4,
+                        errMessage:
+                            "Cannot delete patient with existing appointments!",
+                    });
+                    return;
+                }
+            }
+
+            await foundUser.destroy();
+
+            resolve({
+                errCode: 0,
+                errMessage: "User is deleted successfully!",
+            });
+        } catch (error) {
+            reject(error);
+        }
     });
 };
 
